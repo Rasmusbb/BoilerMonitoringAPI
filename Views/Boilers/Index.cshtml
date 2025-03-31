@@ -1,0 +1,53 @@
+﻿@model IEnumerable<BoilerMonitoringAPI.Models.Boilers>
+
+@{
+    ViewData["Title"] = "Index";
+}
+
+<h1>Index</h1>
+
+<p>
+    <a asp-action="Create">Create New</a>
+</p>
+<table class="table">
+    <thead>
+        <tr>
+            <th>
+                @Html.DisplayNameFor(model => model.BoilerName)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.BoilerType)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.BoilerStatus)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Home)
+            </th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+@foreach (var item in Model) {
+        <tr>
+            <td>
+                @Html.DisplayFor(modelItem => item.BoilerName)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.BoilerType)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.BoilerStatus)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.Home.HomeID)
+            </td>
+            <td>
+                <a asp-action="Edit" asp-route-id="@item.BoilerID">Edit</a> |
+                <a asp-action="Details" asp-route-id="@item.BoilerID">Details</a> |
+                <a asp-action="Delete" asp-route-id="@item.BoilerID">Delete</a>
+            </td>
+        </tr>
+}
+    </tbody>
+</table>
