@@ -9,6 +9,14 @@ namespace BoilerMonitoringAPI.Models
         On
     }
 
+    public enum FillLevel
+    {
+        Empty,
+        Low,
+        Half,
+        Full
+    }
+
     public enum BoilerType
     {
         Electric,
@@ -25,10 +33,10 @@ namespace BoilerMonitoringAPI.Models
         public BoilerType BoilerType { get; set; }
         public BoilerStatus BoilerStatus { get; set; }
         double TargetTemperature { get; set; }
+        public FillLevel FillLevel { get; set; }
 
         [ForeignKey("HomeID")]
         public Guid HomeID { get; set; }
-        public Homes Home { get; set; }
-
+        public Home Home { get; set; }
     }
 }

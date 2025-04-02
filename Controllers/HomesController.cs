@@ -25,11 +25,7 @@ namespace BoilerMonitoringAPI.Controllers
         }
         string isnull = "Entity set 'DatabaseContext.Homes'  is null.";
 
-        // GET: Homes
-        public async Task<IActionResult> Index()
-        {
-            return View(await _context.Homes.ToListAsync());
-        }
+
 
         [HttpPost("AddHome")]
         public async Task<ActionResult<HomesDTOID>> AddBoiler(HomesDTO HomeDTO)
@@ -38,23 +34,59 @@ namespace BoilerMonitoringAPI.Controllers
             {
                 return Problem(isnull);
             }
-            Homes homes = HomeDTO.Adapt<Homes>();
-            _context.Homes.Add(homes);
+            Home home = HomeDTO.Adapt<Home>();
+            home.Users.Add(await _context.Users.FindAsync(HomeDTO.UserID));
+            _context.Homes.Add(home);
             await _context.SaveChangesAsync();
             HomesDTOID homeID = HomeDTO.Adapt<HomesDTOID>();
-            return CreatedAtAction("GetHome", new { id = homes.HomeID }, homeID);
+            return CreatedAtAction("GetHome", new { id = home.HomeID }, homeID);
         }
 
-        [HttpPost("GetHome")]
-        public async Task<ActionResult<HomesDTOID>> AddGet(Guid HomeID)
+        [HttpGet("GetHome")]
+        public async Task<ActionResult<HomesDTOID>> GetHome(Guid HomeID)
         {
             if (_context.Homes == null)
             {
                 return Problem(isnull);
             }
-            Homes homes = await _context.Homes.FindAsync(HomeID);
+            Home homes = await _context.Homes.FindAsync(HomeID);
             HomesDTOID HomeDTO = homes.Adapt<HomesDTOID>();
             return HomeDTO;
+        }
+
+        [HttpPost("AddBoiler")]
+        public async Task<ActionResult<BoilerDTOID>> AddBoiler(BoilerDTO BoilerDTO)
+        {
+            if (_context.Boilers == null)
+            {
+                return Problem(isnull);
+            }
+            try
+            {
+                Boilers boiler = BoilerDTO.Adapt<Boilers>();
+                Home home = await _context.Homes.FindAsync(BoilerDTO.HomeID);
+                _context.Boilers.Add(boiler);
+                home.Boilers.Add(boiler);
+                await _context.SaveChangesAsync();
+                BoilerDTOID boilerID = BoilerDTO.Adapt<BoilerDTOID>();
+                return CreatedAtAction("GetBoiler", new { id = boiler.BoilerID }, boilerID);
+            }
+            catch
+            {
+                return BadRequest();
+            }
+        }
+
+        [HttpGet("GetBoiler")]
+        public async Task<ActionResult<BoilerDTOID>> GetBoiler(Guid BoilerID)
+        {
+            if (_context.Homes == null)
+            {
+                return Problem(isnull);
+            }
+            Boilers boiler = await _context.Boilers.FindAsync(BoilerID);
+            BoilerDTOID boilerDTOID = boiler.Adapt<BoilerDTOID>();
+            return boilerDTOID;
         }
 
         private bool HomesExists(Guid id)

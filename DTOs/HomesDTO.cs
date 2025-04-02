@@ -6,10 +6,8 @@ namespace BoilerMonitoringAPI.DTOs
     {
         public string HomeName { get; set; }
         public string Address { get; set; }
-        public ICollection<Boilers> Boilers { get; set; }
-        public ICollection<User> Users { get; set; }
+        public Guid UserID { get; set; }
     }
-
     public class HomesDTOID : HomesDTO
     {
         public Guid HomeID { get; set; }

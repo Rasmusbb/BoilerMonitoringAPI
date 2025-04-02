@@ -9,7 +9,7 @@ namespace BoilerMonitoringAPI.DTOs
         public string BoilerName { get; set; }
         public BoilerType BoilerType { get; set; }
         public BoilerStatus BoilerStatus { get; set; }
-        double TargetTemperature { get; set; }
+        public double TargetTemperature { get; set; }
         public Guid HomeID { get; set; }
     }
 
