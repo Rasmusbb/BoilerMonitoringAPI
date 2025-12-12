@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using Microsoft.Identity.Client;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace BoilerMonitoringAPI.Models
@@ -8,15 +9,6 @@ namespace BoilerMonitoringAPI.Models
         Off,
         On
     }
-
-    public enum FillLevel
-    {
-        Empty,
-        Low,
-        Half,
-        Full
-    }
-
     public enum BoilerType
     {
         Electric,
@@ -25,18 +17,26 @@ namespace BoilerMonitoringAPI.Models
         pellet,
         wood
     }
-    public class Boilers
+    public class Boiler
     {
         [Key]
         public Guid BoilerID { get; set; }
         public string BoilerName { get; set; }
         public BoilerType BoilerType { get; set; }
         public BoilerStatus BoilerStatus { get; set; }
-        double TargetTemperature { get; set; }
-        public FillLevel FillLevel { get; set; }
-
+        public bool IsOpen { get; set; }    
+        public double minFuelLevel { get; set; }
+        public double maxFuelLevel { get; set; }
+        public double currentFuelLevel { get; set; }   
+        public DateTime LastUpdated { get; set; }
         [ForeignKey("HomeID")]
         public Guid HomeID { get; set; }
         public Home Home { get; set; }
+        
+
+        public Guid DeviceID { get; set; }
+
+        [ForeignKey("DeviceID")]
+        public Device Devices { get; set; }
     }
 }

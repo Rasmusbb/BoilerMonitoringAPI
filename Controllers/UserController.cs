@@ -1,15 +1,8 @@
 ﻿using BoilerMonitoringAPI.Data;
 using BoilerMonitoringAPI.DTOs;
-using BoilerMonitoringAPI.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Mapster;
-using System.Security.Cryptography;
-using System.Text;
-using System;
-using Microsoft.IdentityModel.Tokens;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
+using BoilerMonitoringAPI.Services;
 
 namespace BoilerMonitoringAPI.Controllers
 {
@@ -18,114 +11,77 @@ namespace BoilerMonitoringAPI.Controllers
     public class UserController : Controller
     {
         private readonly string DsetNull = "Entity set 'DatabaseContext.User'  is null.";
-        private readonly BoilerMonitoringAPIContext _context;
-        private readonly IConfiguration _configuration;
-        public UserController(BoilerMonitoringAPIContext context, IConfiguration iConfig)
+        private readonly UserService _context;
+        public UserController(UserService context)
         {
             _context = context;
-            _configuration = iConfig;
         }
 
-        [HttpGet("Login")]
-        public async Task<ActionResult<string>> Login(string Email, string Password)
+        [HttpPost("Login")]
+        public async Task<ActionResult<UserDTOIDTokens>> Login(UserLoingObject UserLogin)
         {
-            if (_context.Users == null)
+            UserTokens Tokens = await _context.Login(UserLogin);
+            if (Tokens == null)
             {
-                return Problem(DsetNull);
+                return Unauthorized();
             }
-            Email = Email.ToLower();
-            User user = _context.Users.FirstOrDefault(u => u.Email == Email);
-            if (user != null)
+            else
             {
-                string hash = Hash(Password + user.UserID);
-                if (hash == user.Password)
-                {
+                return Ok(Tokens);
+            }
+        }
 
-                    return GenerateJwtToken(user);
+        [HttpPost("RefreshToken")]
+        public async Task<IActionResult> LoginByRefreshToken(RefreshTokenUser Token)
+        {
+            try
+            {
+                UserTokens Tokens = await _context.RefreshToken(Token);
+                if (Tokens == null)
+                {
+                    return Unauthorized();
                 }
                 else
                 {
-                    return NotFound(hash);
+                    return Ok(Tokens);
                 }
             }
-            return NotFound();
+            catch (KeyNotFoundException Kex)
+            {
+                return StatusCode(404, $"UserID didn't match any in the stystem {Kex}");
+            }
         }
 
 
         [HttpPost("AddUser")]
-        public async Task<ActionResult<UserDTO>> AddUser(UserDTO userDTO)
+        public async Task<IActionResult> Create(UserPassword UserDTO)
         {
-            if (_context.Users == null)
-            {
-                return Problem(DsetNull);
-            }
             try
             {
-                userDTO.Email = userDTO.Email.ToLower();
-                User User = userDTO.Adapt<User>();
-                _context.Users.Add(User);
-                User.Password = Hash(userDTO.Password + User.UserID);
-                await _context.SaveChangesAsync();
-                return CreatedAtAction("GetUser", new { id = User.UserID }, User);
-            }
-            catch
-            {
-                return BadRequest();
-            }
-
-        }
-
-        [HttpGet("GetUsersHomes")]
-        public async Task<ActionResult<List<Home>> GetUserHomes(Guid UserID)
-        {
-           List<Home> homes = _context.Homes.Where()
-        }
-
-        [HttpGet("GetUser")]
-        public async Task<ActionResult<UserDTOID>> GetUser(Guid UserID)
-        {
-            if (_context.Homes == null)
-            {
-                return Problem(DsetNull);
-            }
-            User User = await _context.Users.FindAsync(UserID);
-            UserDTOID UserDTOID = User.Adapt<UserDTOID>();
-            return UserDTOID;
-        }
-
-        public static string Hash(string password)
-        {
-
-            StringBuilder builder = new StringBuilder();
-            using (SHA256 sha256Hash = SHA256.Create())
-            {
-                byte[] bytes = sha256Hash.ComputeHash(Encoding.UTF8.GetBytes(password));
-                foreach (byte b in bytes)
+                UserDTOID User = await _context.CreateAsync(UserDTO);
+                if (User == null)
                 {
-                    builder.Append(b.ToString("x2"));
+                    return BadRequest();
                 }
+                return CreatedAtAction(nameof(GetById), new { id = User.UserID }, User);
             }
-            return builder.ToString();
+            catch (DbUpdateException dbex)
+            {
+                return Conflict($"An error occurred while saving the entity changes {dbex}");
+            }
+
+
+
         }
 
-        private string GenerateJwtToken(User user)
+        [HttpGet("GetByID")]
+        public async Task<ActionResult<UserDTOID>> GetById(Guid UserID)
         {
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration.GetSection("Token").Value));
-            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-            Claim[] claims = new Claim[]
-            {
-                new Claim("userID", user.UserID.ToString()),
-                new Claim("Name", user.UserName.ToString()),
-                new Claim("Email",user.Email.ToString())
-            };
-            var token = new JwtSecurityToken(
-                issuer: "BoilerMonitorAPI",
-                audience: "BoilerMonitorFrontEnd",
-                claims: claims,
-                expires: DateTime.Now.AddDays(30),
-                signingCredentials: creds);
+            UserDTOID User = await _context.GetByIdAsync(UserID);
+            if (User == null)
+                return NotFound();
 
-            return new JwtSecurityTokenHandler().WriteToken(token);
+            return Ok(User);
         }
     }
 }

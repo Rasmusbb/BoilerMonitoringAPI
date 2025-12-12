@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BoilerMonitoringAPI.Migrations
 {
     [DbContext(typeof(BoilerMonitoringAPIContext))]
-    [Migration("20250402104126_boiler")]
-    partial class boiler
+    [Migration("20250521080021_members")]
+    partial class members
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -32,7 +32,6 @@ namespace BoilerMonitoringAPI.Migrations
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("BoilerName")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("BoilerStatus")
@@ -41,17 +40,58 @@ namespace BoilerMonitoringAPI.Migrations
                     b.Property<int>("BoilerType")
                         .HasColumnType("int");
 
-                    b.Property<int>("FillLevel")
-                        .HasColumnType("int");
+                    b.Property<Guid>("DeviceID")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<Guid>("HomeID")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<bool>("IsOpen")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime>("LastUpdated")
+                        .HasColumnType("datetime2");
+
+                    b.Property<double>("currentFuelLevel")
+                        .HasColumnType("float");
+
+                    b.Property<double>("maxFuelLevel")
+                        .HasColumnType("float");
+
+                    b.Property<double>("minFuelLevel")
+                        .HasColumnType("float");
+
                     b.HasKey("BoilerID");
+
+                    b.HasIndex("DeviceID")
+                        .IsUnique();
 
                     b.HasIndex("HomeID");
 
                     b.ToTable("Boilers");
+                });
+
+            modelBuilder.Entity("BoilerMonitoringAPI.Models.Devices", b =>
+                {
+                    b.Property<Guid>("DeviceID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("DeviceName")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime>("LastNoice")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("firstNoice")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("DeviceID");
+
+                    b.ToTable("Devices");
                 });
 
             modelBuilder.Entity("BoilerMonitoringAPI.Models.Home", b =>
@@ -61,16 +101,32 @@ namespace BoilerMonitoringAPI.Migrations
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("Address")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("HomeName")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("HomeID");
 
                     b.ToTable("Homes");
+                });
+
+            modelBuilder.Entity("BoilerMonitoringAPI.Models.HomeMembers", b =>
+                {
+                    b.Property<Guid>("UserID")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("HomeID")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Role")
+                        .HasColumnType("int");
+
+                    b.HasKey("UserID", "HomeID");
+
+                    b.HasIndex("HomeID");
+
+                    b.ToTable("HomeMembers");
                 });
 
             modelBuilder.Entity("BoilerMonitoringAPI.Models.User", b =>
@@ -80,15 +136,18 @@ namespace BoilerMonitoringAPI.Migrations
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("Email")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Password")
-                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("RefeshTokenExpiryTime")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("RefreshToken")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("UserName")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("UserID");
@@ -96,50 +155,59 @@ namespace BoilerMonitoringAPI.Migrations
                     b.ToTable("Users");
                 });
 
-            modelBuilder.Entity("UserHomes", b =>
-                {
-                    b.Property<Guid>("HomeID")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid>("UserID")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("HomeID", "UserID");
-
-                    b.HasIndex("UserID");
-
-                    b.ToTable("UserHomes");
-                });
-
             modelBuilder.Entity("BoilerMonitoringAPI.Models.Boilers", b =>
                 {
+                    b.HasOne("BoilerMonitoringAPI.Models.Devices", "Devices")
+                        .WithOne("Boiler")
+                        .HasForeignKey("BoilerMonitoringAPI.Models.Boilers", "DeviceID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("BoilerMonitoringAPI.Models.Home", "Home")
                         .WithMany("Boilers")
                         .HasForeignKey("HomeID")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.Navigation("Devices");
+
                     b.Navigation("Home");
                 });
 
-            modelBuilder.Entity("UserHomes", b =>
+            modelBuilder.Entity("BoilerMonitoringAPI.Models.HomeMembers", b =>
                 {
-                    b.HasOne("BoilerMonitoringAPI.Models.Home", null)
-                        .WithMany()
+                    b.HasOne("BoilerMonitoringAPI.Models.Home", "Home")
+                        .WithMany("Members")
                         .HasForeignKey("HomeID")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("BoilerMonitoringAPI.Models.User", null)
-                        .WithMany()
+                    b.HasOne("BoilerMonitoringAPI.Models.User", "User")
+                        .WithMany("Homes")
                         .HasForeignKey("UserID")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Home");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("BoilerMonitoringAPI.Models.Devices", b =>
+                {
+                    b.Navigation("Boiler");
                 });
 
             modelBuilder.Entity("BoilerMonitoringAPI.Models.Home", b =>
                 {
                     b.Navigation("Boilers");
+
+                    b.Navigation("Members");
+                });
+
+            modelBuilder.Entity("BoilerMonitoringAPI.Models.User", b =>
+                {
+                    b.Navigation("Homes");
                 });
 #pragma warning restore 612, 618
         }

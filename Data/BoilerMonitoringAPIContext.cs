@@ -16,21 +16,37 @@ namespace BoilerMonitoringAPI.Data
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
 
-            modelBuilder.Entity<Home>()
-                .HasMany(H => H.Users)
-                .WithMany(U => U.Homes)
-                .UsingEntity(
-                    "UserHomes",
-                    U => U.HasOne(typeof(User)).WithMany()
-                    .HasForeignKey("UserID").HasPrincipalKey(nameof(User.UserID)),
-                    H => H.HasOne(typeof(Home)).
-                    WithMany().HasForeignKey("HomeID").
-                    HasPrincipalKey(nameof(Home.HomeID)),
-                    HU => HU.HasKey("HomeID", "UserID"));
+            modelBuilder.Entity<User>()
+                .HasIndex(u => u.Email)
+                .IsUnique();
+
+            modelBuilder.Entity<HomeMembers>()
+                .HasKey(ur => new { ur.UserID, ur.HomeID });
+
+
+            modelBuilder.Entity<HomeMembers>()
+            .HasOne(hm => hm.Home)
+            .WithMany(h => h.Members)
+            .HasForeignKey(hm => hm.HomeID);
+
+            modelBuilder.Entity<HomeMembers>()
+                .HasOne(hm => hm.User)
+                .WithMany(m => m.Homes)
+                .HasForeignKey(hm => hm.UserID);
+
+
+            modelBuilder.Entity<Boiler>()
+                .HasOne(b => b.Devices)
+                .WithOne(d => d.Boiler)
+                .HasForeignKey<Boiler>(b => b.DeviceID);
+
 
         }
-        public DbSet<BoilerMonitoringAPI.Models.Boilers> Boilers { get; set; } = default!;
-        public DbSet<BoilerMonitoringAPI.Models.Home> Homes { get; set; } = default!;
+        public DbSet<Boiler> Boilers { get; set; } = default!;
+
+        public DbSet<HomeMembers> HomeMembers{ get; set; } = default!; 
+        public DbSet<Home> Homes { get; set; } = default!;
         public DbSet<User> Users { get; set; } = default!;  
+        public DbSet<Device> Devices { get; set; } = default!; 
     }
 }
